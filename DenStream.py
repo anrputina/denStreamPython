@@ -21,7 +21,6 @@ from microCluster import MicroCluster
 
 from denDBScan import denDBScan
 
-
 def distance(pointA, pointB):
     distance = 0.0
     
@@ -89,7 +88,7 @@ class DenStream():
                 #print len(neighborhood)
                 
                 if (len(neighborhood) > self.minPoints):
-                    mc = MicroCluster(point, self.currentTimestamp, self.lamb, self.currentTimestamp)
+                    mc = MicroCluster(point, self.currentTimestamp, self.lamb)
                     self.expandCluster(mc, neighborhood)
                     self.pMicroCluster.insert(mc)
             else:
@@ -101,7 +100,7 @@ class DenStream():
             
             if not point.covered:
                 point.covered = True
-                mc.insert(point, self.currentTimestamp)
+                mc.insertPoint(point, self.currentTimestamp)
                 newNeighborhood = self.getNeighbourhoodIDs(point)
                 if (len(neighborhood) > self.minPoints):
                     self.expandCluster(mc, newNeighborhood)
@@ -136,12 +135,12 @@ class DenStream():
             
             if (minCluster == None):
                 minCluster = cluster
-                minDist = distance(p, Point(cluster.getCenter(timestamp), self.currentTimestamp))
+                minDist = distance(point, Point(cluster.computeCenter(timestamp)))
                 
-            dist = distance(p, Point(cluster.getCenter(timestamp), self.currentTimestamp))
+            dist = distance(point, Point(cluster.computeCenter(timestamp)))
 #            print 'Distance p - cluster center: '+str(dist)
-            dist -= cluster.getRadius(self.currentTimestamp)
-            print 'Distance p - cluster: '+str(dist)
+            dist -= cluster.computeRadius(self.currentTimestamp)
+#            print 'Distance p - cluster: '+str(dist)
 
             if (dist < minDist):
                 minDist = dist
@@ -154,9 +153,10 @@ class DenStream():
 #        self.timestampStep += 1
 #        self.currentTimestamp = datetime.datetime.now()
 #        self.currentTimestamp = time.time()
-        
+
         if simulation:
             self.currentTimestamp += 1
+            point.setTimestamp(self.currentTimestamp)
         else:
             self.currentTimestamp = time.time()
 
@@ -179,20 +179,19 @@ class DenStream():
             merged = False
             
             if len(self.pMicroCluster.clusters) != 0:
-                print ('in pMicroCluster')
+#                print ('in pMicroCluster')
                 closestMicroCluster = self.nearestCluster(point, self.currentTimestamp, kind='cluster')
+                                
+                backupClosestCluster = copy.deepcopy(closestMicroCluster)
+                backupClosestCluster.insertPoint(point, self.currentTimestamp)
                 
-                print ('POS closest: ')+str(self.pMicroCluster.clusters.index(closestMicroCluster))
-                
-                backupClosestCluster = copy.copy(closestMicroCluster)
-                backupClosestCluster.insert(point, self.currentTimestamp)
-                              
-                if (backupClosestCluster.getRadius(self.currentTimestamp) <= self.epsilon):
+                if (backupClosestCluster.computeRadius(self.currentTimestamp) <= self.epsilon):
                     
-                    closestMicroCluster.insert(point, self.currentTimestamp)
+                    closestMicroCluster.insertPoint(point, self.currentTimestamp)
+
                     merged = True
-                    self.pMicroCluster.show()
-                    print 'MERGED'
+#                    self.pMicroCluster.show()
+#                    print 'MERGED'
 
             
             if not merged and len(self.oMicroCluster.clusters) != 0:
@@ -201,11 +200,11 @@ class DenStream():
                 
                 closestMicroCluster = self.nearestCluster(point, self.currentTimestamp, kind='outlier')
             
-                backupClosestCluster = copy.copy(closestMicroCluster)
-                backupClosestCluster.insert(point, self.currentTimestamp)
+                backupClosestCluster = copy.deepcopy(closestMicroCluster)
+                backupClosestCluster.insertPoint(point, self.currentTimestamp)
                 
-                if (backupClosestCluster.getRadius(self.currentTimestamp) <= self.epsilon):
-                    closestMicroCluster.insert(point, self.currentTimestamp)
+                if (backupClosestCluster.computeRadius(self.currentTimestamp) <= self.epsilon):
+                    closestMicroCluster.insertPoint(point, self.currentTimestamp)
                     merged = True
                     
                     if (closestMicroCluster.weight > self.beta * self.mu):
@@ -215,7 +214,7 @@ class DenStream():
             if not merged:
                 print 'not merged'
                 newOutlierMicroCluster = MicroCluster(point, self.currentTimestamp, self.lamb, self.currentTimestamp)
-                self.oMicroCluster.insert(newOutlierMicroCluster)
+                self.oMicroCluster.insertPoint(newOutlierMicroCluster)
                     
             if self.currentTimestamp % self.tp == 0:
                 
@@ -239,32 +238,45 @@ class DenStream():
             
 points=[]
 
-step = 0
 for x in [[1,1,1], [2,1,1], [3,1,1], [2,1,1], [1,1,1], [76,1,1], [77,1,1], [78,1,1], [79,1,1], [130,1,1], [131,1,1], [132,1,1], [133,1,1]]:
-    p = Point(x, 0)
-    step += 1
+    p = Point(x)
     points.append(p)
   
 den = DenStream(horizon=150, epsilon=10, minPoints=2, beta=0.2, mu=10, initPointOption=2, startingPoints=points)
 
 
-p = Point([2,1,1], 0)
+p = Point([2,1,1])
 den.runOnNewPoint(p)
+print den.pMicroCluster.clusters[0].computeCenter(den.currentTimestamp)
+print den.pMicroCluster.clusters[0].computeRadius(den.currentTimestamp)
+del p
 
-p2 = Point([2,2,1], 1)
-den.runOnNewPoint(p2)
+#p2 = Point([2,2,1])
+#den.runOnNewPoint(p2)
+#print den.pMicroCluster.clusters[0].computeCenter(den.currentTimestamp)
+#print den.pMicroCluster.clusters[0].computeRadius(den.currentTimestamp)
+#del p2
+#
+#p = Point([3,2,1])
+#den.runOnNewPoint(p)
+#print den.pMicroCluster.clusters[0].computeCenter(den.currentTimestamp)
+#print den.pMicroCluster.clusters[0].computeRadius(den.currentTimestamp)
+#del p
 
-p = Point([3,2,1], 2)
-den.runOnNewPoint(p)
-p = Point([75,1,1], 3)
-den.runOnNewPoint(p)
-p = Point([130,1,1], 4)
-den.runOnNewPoint(p)
+##
+#p = Point([75,1,1])
+#den.runOnNewPoint(p)
+#del p
+#
+#p = Point([130,1,1], 4)
+#den.runOnNewPoint(p)
+#del p
 
-
-
-p = Point([7,1,1], 5)
-den.runOnNewPoint(p)
+#
+#
+#
+#p = Point([7,1,1], 5)
+#den.runOnNewPoint(p)
 #p = Point([8,1])
 #den.runOnNewPoint(p)
 #p = Point([9,1])

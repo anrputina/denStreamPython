@@ -8,10 +8,10 @@ Created on Thu Jun 29 17:48:21 2017
 
 class Point():
     
-    def __init__(self, value, timestamp):
+    def __init__(self, value):
         self.covered = False
         self.value = value
-        self.timestamp = timestamp
+        self.timestamp = 0
     
     def getCovered(self):
         return self.covered
