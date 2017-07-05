@@ -36,8 +36,7 @@ class MicroCluster():
         self.insertPoint(point, creationTimeStamp)
 
         self.covered = False
-        
-
+                        
 #    def insert(self, point, timestamp):
 #        self.N += 1
 #        self.weight += 1

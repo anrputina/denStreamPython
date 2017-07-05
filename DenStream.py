@@ -13,7 +13,10 @@ import copy
 import math
 import time
 import datetime
+import numpy as np
 import pandas as pd
+
+from sklearn.cluster import DBSCAN
 
 from point import Point
 from cluster import Cluster
@@ -54,13 +57,21 @@ class DenStream():
             self.currentTimestamp = time.time()
 
         
-        self.lamb = 0.1
+        self.lamb = 0.2
         self.inizialized = False
         
         #For debug and performance evaluation
         #Count number of steps
         self.timestampStep = 0
-                
+        
+        self.historyBool = False
+        
+    def setHistory(self, state):
+        self.historyBool = state
+        
+        if state == True:
+            self.history = []
+        
     def resetLearningImpl(self):
         
 #        self.currentTimestamp = datetime.datetime.now()
@@ -77,8 +88,10 @@ class DenStream():
         self.oMicroCluster = Cluster()
                 
         self.tp = round(1/self.lamb * math.log((self.beta*self.mu)/(self.beta*self.mu-1)))+1
-        
+                
     def initialDBScan(self):
+        
+        print 'initialDBSCAN'
         
         for point in self.buffer:
             if not point.covered:
@@ -93,7 +106,47 @@ class DenStream():
                     self.pMicroCluster.insert(mc)
             else:
                 point.covered = False
+             
+    def initialDBScanSciLearn(self):
+        
+        db = DBSCAN(eps=8, min_samples=self.minPoints, algorithm='brute').fit(self.buffer)
+        clusters = db.labels_
+        self.buffer['clusters'] = clusters
+        
+        clusterNumber = np.unique(clusters)
+        
+        for clusterId in clusterNumber:
+            
+            if (clusterId != -1):
+                
+                cl = self.buffer[self.buffer['clusters'] == clusterId]
+                cl = cl.drop('clusters', axis=1)
+                
+                sample = Point(cl.iloc[0].tolist())
+                                
+                mc = MicroCluster(sample, self.currentTimestamp, self.lamb)
+                
+                for sampleNumber in range(len(cl[1:])):
+                    sample = Point(cl.iloc[sampleNumber].tolist())
+                    mc.insertPoint(sample, self.currentTimestamp)
                     
+                self.pMicroCluster.insert(mc)
+                
+    def initWithoutDBScan(self):
+        
+        sample = Point(self.buffer.iloc[0].tolist())
+        
+        mc = MicroCluster(sample, self.currentTimestamp, self.lamb)
+        
+        for sampleNumber in range(len(self.buffer[1:])):
+            sample = Point(self.buffer.iloc[sampleNumber].tolist())
+            mc.insertPoint(sample, self.currentTimestamp)
+            
+        self.pMicroCluster.insert(mc)
+        
+        self.epsilon = self.pMicroCluster.clusters[0].computeRadius(self.currentTimestamp) * 1.5
+
+                
     def expandCluster(self, mc, neighborhood):
         
         for point in neighborhood:
@@ -112,10 +165,12 @@ class DenStream():
         for newPoint in self.buffer:
             if not newPoint.covered :
                 dist = distance(point, newPoint)
-                
                 #print 'distance ' + str(point.value) + ' from ' + str(newPoint.value) + ' = ' + str(dist)
                 
+#                print dist
+                
                 if (dist<self.epsilon):
+#                    print 'ok'
                     neighbourIDs.append(newPoint)
         
         return neighbourIDs
@@ -148,6 +203,11 @@ class DenStream():
                 
         return minCluster
             
+    def runInitialization(self):
+        self.resetLearningImpl()
+#        self.initialDBScanSciLearn()
+        self.initWithoutDBScan()
+        self.inizialized = True
     
     def runOnNewPoint(self, point):
 #        self.timestampStep += 1
@@ -168,7 +228,8 @@ class DenStream():
             self.buffer.append(point)
             if (len(self.buffer) >= self.initPointOption):
                 self.resetLearningImpl()
-                self.initialDBScan()
+#                self.initialDBScan()
+                self.initialDBScanSciLearn()
                 self.inizialized = True
                 
         #############
@@ -190,13 +251,24 @@ class DenStream():
                     closestMicroCluster.insertPoint(point, self.currentTimestamp)
 
                     merged = True
+                
+                    if self.historyBool:
+                        
+                        record = {
+                                    'event': 'Merged',
+                                    'time': self.currentTimestamp,
+                                    'cluster': closestMicroCluster
+                                }
+                        
+                        self.history.append(record)
+                    
 #                    self.pMicroCluster.show()
 #                    print 'MERGED'
 
             
             if not merged and len(self.oMicroCluster.clusters) != 0:
                 
-                print 'not merged and len oMicro'
+#                print 'not merged and len oMicro'
                 
                 closestMicroCluster = self.nearestCluster(point, self.currentTimestamp, kind='outlier')
             
@@ -210,22 +282,44 @@ class DenStream():
                     if (closestMicroCluster.weight > self.beta * self.mu):
                         self.oMicroCluster.clusters.pop(self.oMicroCluster.clusters.index(closestMicroCluster))
                         self.pMicroCluster.insert(closestMicroCluster)
+                        
                     
             if not merged:
-                print 'not merged'
-                newOutlierMicroCluster = MicroCluster(point, self.currentTimestamp, self.lamb, self.currentTimestamp)
-                self.oMicroCluster.insertPoint(newOutlierMicroCluster)
+#                print 'not merged'
+                newOutlierMicroCluster = MicroCluster(point, self.currentTimestamp, self.lamb)
+                self.oMicroCluster.insert(newOutlierMicroCluster)
+                
+                if self.historyBool:
+                    
+                    record = {
+                                'event': 'Outlier',
+                                'time': self.currentTimestamp
+                            }
+                    
+                    self.history.append(record)
                     
             if self.currentTimestamp % self.tp == 0:
-                
-                print ('currentTime % tp')
-                
+                                
                 for cluster in self.pMicroCluster.clusters:
+                    
                     if cluster.weight < self.beta * self.mu:
                         self.pMicroCluster.clusters.pop(self.pMicroCluster.clusters.index(cluster))
+                        
+                        if self.historyBool:
+                            
+                            record = {
+                                        'event': 'pRemoved',
+                                        'time': self.currentTimestamp,
+                                        'cluster': cluster
+                                    }
+                            
+                            self.history.append(record)
+                        
                 
                 for cluster in self.oMicroCluster.clusters:
 
+#                    print 'cercare dentro outlier'
+                    
                     creationTimestamp = cluster.creationTimeStamp
                         
                     xs1 = math.pow(2, -self.lamb*(self.currentTimestamp - creationTimestamp + self.tp)) - 1
@@ -233,23 +327,34 @@ class DenStream():
                     xsi = xs1 / xs2
 
                     if cluster.weight < xsi:
+                        
                         self.oMicroCluster.clusters.pop(self.oMicroCluster.clusters.index(cluster))
+                        
+                        if self.historyBool:
+                            
+                            record = {
+                                        'event': 'oRemoved',
+                                        'time': self.currentTimestamp,
+                                        'cluster': cluster
+                                    }
+                            
+                            self.history.append(record)
                 
             
-points=[]
-
-for x in [[1,1,1], [2,1,1], [3,1,1], [2,1,1], [1,1,1], [76,1,1], [77,1,1], [78,1,1], [79,1,1], [130,1,1], [131,1,1], [132,1,1], [133,1,1]]:
-    p = Point(x)
-    points.append(p)
-  
-den = DenStream(horizon=150, epsilon=10, minPoints=2, beta=0.2, mu=10, initPointOption=2, startingPoints=points)
-
-
-p = Point([2,1,1])
-den.runOnNewPoint(p)
-print den.pMicroCluster.clusters[0].computeCenter(den.currentTimestamp)
-print den.pMicroCluster.clusters[0].computeRadius(den.currentTimestamp)
-del p
+#points=[]
+#
+#for x in [[1,1,1], [2,1,1], [3,1,1], [2,1,1], [1,1,1], [76,1,1], [77,1,1], [78,1,1], [79,1,1], [130,1,1], [131,1,1], [132,1,1], [133,1,1]]:
+#    p = Point(x)
+#    points.append(p)
+#  
+#den = DenStream(horizon=150, epsilon=10, minPoints=2, beta=0.2, mu=10, initPointOption=2, startingPoints=points)
+#
+#
+#p = Point([2,1,1])
+#den.runOnNewPoint(p)
+#print den.pMicroCluster.clusters[0].computeCenter(den.currentTimestamp)
+#print den.pMicroCluster.clusters[0].computeRadius(den.currentTimestamp)
+#del p
 
 #p2 = Point([2,2,1])
 #den.runOnNewPoint(p2)
@@ -306,25 +411,3 @@ del p
 #
 #p = Point([77,1000])
 #den.runOnNewPoint(p)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
