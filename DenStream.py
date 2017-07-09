@@ -190,12 +190,15 @@ class DenStream():
             
             if (minCluster == None):
                 minCluster = cluster
-                minDist = distance(point, Point(cluster.computeCenter(timestamp)))
+#                minDist = distance(point, Point(cluster.computeCenter(timestamp)))
+                minDist = distance(point, Point(cluster.center))
                 
-            dist = distance(point, Point(cluster.computeCenter(timestamp)))
-#            print 'Distance p - cluster center: '+str(dist)
-            dist -= cluster.computeRadius(self.currentTimestamp)
-#            print 'Distance p - cluster: '+str(dist)
+#            dist = distance(point, Point(cluster.computeCenter(timestamp)))
+            dist = distance(point, Point(cluster.center))
+
+#            dist -= cluster.computeRadius(self.currentTimestamp)
+            dist -= cluster.radius
+
 
             if (dist < minDist):
                 minDist = dist
@@ -246,7 +249,9 @@ class DenStream():
                 backupClosestCluster = copy.deepcopy(closestMicroCluster)
                 backupClosestCluster.insertPoint(point, self.currentTimestamp)
                 
-                if (backupClosestCluster.computeRadius(self.currentTimestamp) <= self.epsilon):
+#                if (backupClosestCluster.computeRadius(self.currentTimestamp) <= self.epsilon):
+                if (backupClosestCluster.radius <= self.epsilon):
+
                     
                     closestMicroCluster.insertPoint(point, self.currentTimestamp)
 
@@ -275,7 +280,9 @@ class DenStream():
                 backupClosestCluster = copy.deepcopy(closestMicroCluster)
                 backupClosestCluster.insertPoint(point, self.currentTimestamp)
                 
-                if (backupClosestCluster.computeRadius(self.currentTimestamp) <= self.epsilon):
+#                if (backupClosestCluster.computeRadius(self.currentTimestamp) <= self.epsilon):
+                if (backupClosestCluster.radius <= self.epsilon):
+
                     closestMicroCluster.insertPoint(point, self.currentTimestamp)
                     
                     if self.historyBool:

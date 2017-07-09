@@ -6,6 +6,7 @@ Created on Tue Jul  4 14:04:57 2017
 @author: anr.putina
 """
 
+import time as tm
 import pandas as pd
 from point import Point
 from DenStream import DenStream
@@ -24,11 +25,11 @@ def normalize_matrix(df):
 
 ### PREPARE DATA
 #df = pd.read_csv('leaf1_5min.csv').dropna().drop('Unnamed: 0', axis=1)
-df = pd.read_csv('leaf1_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
+#df = pd.read_csv('leaf1_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
 #df = pd.read_csv('leaf2clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
 #df = pd.read_csv('spine4_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
 #df = pd.read_csv('leaf8_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
-#df = pd.read_csv('spine2_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
+df = pd.read_csv('spine2_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
 #df = pd.read_csv('dr01_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
 #df = pd.read_csv('dr01_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
 #df = pd.read_csv('spine3_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
@@ -85,10 +86,15 @@ den.setHistory(True)
 ####
 den.runInitialization()
 #######
+simulationTime = []
+
 for sampleNumber in range(len(testDf)):
 #for sampleNumber in range(1,8):
+    start = tm.time()
     sample = testDf.iloc[sampleNumber]
     den.runOnNewPoint(Point(sample.values))
+    end = tm.time()
+    simulationTime.append(end-start)
     
 #### ground truth times ###
 
