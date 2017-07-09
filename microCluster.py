@@ -54,6 +54,11 @@ class MicroCluster():
         self.lastEditTimeStamp = timestamp
         self.points.append(point)
         
+        if self.N == 101:
+            self.points.remove(0)
+            self.points.append(point)
+            self.N -= 1
+            
         self.weight = self.computeWeight(timestamp)
     
 #    ### V1 without real weight ###         
@@ -156,6 +161,10 @@ class MicroCluster():
         c = cf1 / w
         
         return c
+
+    def getCenter(self):
+        
+        return self.center
             
     def computeRadius(self, timestamp):
         
@@ -177,6 +186,9 @@ class MicroCluster():
                     
         return maxRad * radiusFactor
 
+    def getRadius(self):
+        
+        return self.radius
     
 #    ### V1 without real weight ###
 #    def getCF1(self, dt):

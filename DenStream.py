@@ -269,7 +269,7 @@ class DenStream():
             if not merged and len(self.oMicroCluster.clusters) != 0:
                 
 #                print 'not merged and len oMicro'
-                
+
                 closestMicroCluster = self.nearestCluster(point, self.currentTimestamp, kind='outlier')
             
                 backupClosestCluster = copy.deepcopy(closestMicroCluster)
@@ -277,6 +277,15 @@ class DenStream():
                 
                 if (backupClosestCluster.computeRadius(self.currentTimestamp) <= self.epsilon):
                     closestMicroCluster.insertPoint(point, self.currentTimestamp)
+                    
+                    if self.historyBool:
+                    
+                        record = {
+                                    'event': 'Outlier',
+                                    'time': self.currentTimestamp
+                                }
+                        self.history.append(record)
+                    
                     merged = True
                     
                     if (closestMicroCluster.weight > self.beta * self.mu):

@@ -9,6 +9,11 @@ Created on Tue Jul  4 14:04:57 2017
 import pandas as pd
 from point import Point
 from DenStream import DenStream
+from denDBScan import denDBScan
+from groundTruth import groundTruth
+
+from visualization import Visualization
+
 import matplotlib.pyplot as plt
 from microCluster import MicroCluster
 from sklearn.neighbors import NearestNeighbors
@@ -19,14 +24,14 @@ def normalize_matrix(df):
 
 ### PREPARE DATA
 #df = pd.read_csv('leaf1_5min.csv').dropna().drop('Unnamed: 0', axis=1)
-#df = pd.read_csv('leaf1_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
+df = pd.read_csv('leaf1_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
 #df = pd.read_csv('leaf2clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
 #df = pd.read_csv('spine4_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
 #df = pd.read_csv('leaf8_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
 #df = pd.read_csv('spine2_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
 #df = pd.read_csv('dr01_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
-#df = pd.read_csv('leaf6_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
-df = pd.read_csv('spine3_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
+#df = pd.read_csv('dr01_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
+#df = pd.read_csv('spine3_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
 
 
 
@@ -85,92 +90,14 @@ for sampleNumber in range(len(testDf)):
     sample = testDf.iloc[sampleNumber]
     den.runOnNewPoint(Point(sample.values))
     
-
-
-#result = den.history
-#outliers = []
-#for event in result:
-#    
-#    if event['event'] == 'Outlier':
-#        outliers.append(event)
-#        
-#fig, ax = plt.subplots()
-#ax.plot(df['paths-count'].values)
-#
-#for outlier in outliers:
-#    ax.plot(60+outlier['time'], df['paths-count'].iloc[60+outlier['time']], marker='o', color='r')
-#
-#
-
 #### ground truth times ###
 
-eventsGroundTruth = []
-
-eventRecord = {
-            'startTime': 1498754403279000000,
-            'startIndex': 73,
-            'endTime': 1498754519173000000,
-            'endIndex': 100
-        }
-
-eventsGroundTruth.append(eventRecord)
-
-eventRecord = {
-            'startTime': 1498754639663000000,
-            'startIndex': 127,
-            'endTime': 1498754760063000000,
-            'endIndex': 154
-        }
-
-eventsGroundTruth.append(eventRecord)
-
-eventRecord = {
-            'startTime': 1498754880445000000,
-            'startIndex': 181,
-            'endTime': 1498755000770000000,
-            'endIndex': 208
-        }
-
-eventsGroundTruth.append(eventRecord)
-
-eventRecord = {
-            'startTime': 1498755121008000000,
-            'startIndex': 235,
-            'endTime': 1498755304432000000,
-            'endIndex': 276
-        }
-
-eventsGroundTruth.append(eventRecord)
-
-eventRecord = {
-            'startTime': 1498755419850000000,
-            'startIndex': 302,
-            'endTime': 1498755601181000,
-            'endIndex': 343
-        }
-
-eventsGroundTruth.append(eventRecord)
-
-eventRecord = {
-            'startTime': 1498755721694000000,
-            'startIndex': 370,
-            'endTime': 1498755900264000000,
-            'endIndex': 410
-        }
-
-eventsGroundTruth.append(eventRecord)
-
-eventRecord = {
-            'startTime': 1498756020858000,
-            'startIndex': 437,
-            'endTime': 1498756199112000,
-            'endIndex': 477
-        }
-
-eventsGroundTruth.append(eventRecord)
+truth = groundTruth()
+truth.simulationBGP_CLEAR()
 
 #############################
 
+visual = Visualization()
 
 result = den.history
 outliers = []
@@ -183,51 +110,39 @@ for event in result:
     if event['event'] == 'Merged':
         merged.append(event['time'])
         
-fig, ax = plt.subplots(2, sharex=True)
-
-plot=0
-feature = 'paths-count'
-ax[plot].plot(df[feature].values)
-
-stepsAfter = 59
-
-for outlier in outliers:
-    ax[plot].plot(stepsAfter+outlier['time'], df[feature].iloc[stepsAfter+outlier['time']], marker='o', color='r')
-
-for mergePoint in merged:
-    ax[plot].plot(stepsAfter+mergePoint, df[feature].iloc[stepsAfter+mergePoint], marker='x', color='g')
-
-ax[plot].set_title('Leaf1 - clear BGP')
-#ax[plot].set_xlabel('Simulation Step')
-ax[plot].set_ylabel(feature)
-#ax[plot].axis([0,40,1023, 1037])
-
-for event in eventsGroundTruth:
-    ax[plot].axvspan(event['startIndex'], event['endIndex'], alpha=0.5, color='red')
+features = ['paths-count', '0/RP0/CPU0free-application-memory', 'vrf__update-messages-received']
+        
+visual.plotOutliers(features, df, outliers, merged, truth, 59)
 
 
-ax[plot].legend()
-
-plot=1
-feature = '0/RP0/CPU0free-application-memory'
-ax[plot].plot(df[feature].values)
-
-stepsAfter = 59
-
-for outlier in outliers:
-    ax[plot].plot(stepsAfter+outlier['time'], df[feature].iloc[stepsAfter+outlier['time']], marker='o', color='r')
-
-for mergePoint in merged:
-    ax[plot].plot(stepsAfter+mergePoint, df[feature].iloc[stepsAfter+mergePoint], marker='x', color='g')
-
-ax[plot].set_title('Leaf1 - clear BGP')
-ax[plot].set_xlabel('Simulation Step')
-ax[plot].set_ylabel('free-application-memory')
-
-for event in eventsGroundTruth:
-    ax[plot].axvspan(event['startIndex'], event['endIndex'], alpha=0.5, color='red')
-
-
-
-
+### label ###
+time = time[:500]
+result = time< 1
+for event in truth.events:
     
+    check = (time >= event['startTime']) & (time <= event['endTime'])
+
+    result = result | check
+
+df['label'] = result
+
+### outputs ###
+output = [False] * 60
+result = den.history
+for  event in result:
+    
+    if event['event'] == 'Outlier':
+        output.append(True)
+    if event['event'] == 'Merged':
+        output.append(False)
+
+df['result'] = output
+
+tp = (df['label'] == True) & (df['result'] == True)
+tn = (df['label'] == False) & (df['result'] == False)
+
+fp = (df['label'] == False) & (df['result'] == True)
+fn = (df['label'] == True) & (df['result'] == False)
+
+precision = tp.sum() / float((tp.sum() + fp.sum()))
+recall = tp.sum() / float((tp.sum() + fn.sum()))
