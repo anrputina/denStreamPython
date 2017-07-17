@@ -134,12 +134,12 @@ class DenStream():
                 
     def initWithoutDBScan(self):
         
-        sample = Point(self.buffer.iloc[0].tolist())
+        sample = Point(self.buffer.iloc[0].tolist(), 0)
         
         mc = MicroCluster(sample, self.currentTimestamp, self.lamb)
         
         for sampleNumber in range(len(self.buffer[1:])):
-            sample = Point(self.buffer.iloc[sampleNumber].tolist())
+            sample = Point(self.buffer.iloc[sampleNumber].tolist(), 0)
             mc.insertPoint(sample, self.currentTimestamp)
             
         self.pMicroCluster.insert(mc)
@@ -191,10 +191,10 @@ class DenStream():
             if (minCluster == None):
                 minCluster = cluster
 #                minDist = distance(point, Point(cluster.computeCenter(timestamp)))
-                minDist = distance(point, Point(cluster.center))
+                minDist = distance(point, Point(cluster.center, 0))
                 
 #            dist = distance(point, Point(cluster.computeCenter(timestamp)))
-            dist = distance(point, Point(cluster.center))
+            dist = distance(point, Point(cluster.center, 0))
 
 #            dist -= cluster.computeRadius(self.currentTimestamp)
             dist -= cluster.radius
@@ -262,7 +262,8 @@ class DenStream():
                         record = {
                                     'event': 'Merged',
                                     'time': self.currentTimestamp,
-                                    'cluster': closestMicroCluster
+                                    'cluster': closestMicroCluster,
+                                    'realTime': point.realTimestamp
                                 }
                         
                         self.history.append(record)
@@ -289,8 +290,10 @@ class DenStream():
                     
                         record = {
                                     'event': 'Outlier',
-                                    'time': self.currentTimestamp
+                                    'time': self.currentTimestamp,
+                                    'realTime': point.realTimestamp
                                 }
+                        
                         self.history.append(record)
                     
                     merged = True
@@ -309,7 +312,8 @@ class DenStream():
                     
                     record = {
                                 'event': 'Outlier',
-                                'time': self.currentTimestamp
+                                'time': self.currentTimestamp,
+                                'realTime': point.realTimestamp
                             }
                     
                     self.history.append(record)
@@ -317,6 +321,8 @@ class DenStream():
             if self.currentTimestamp % self.tp == 0:
                                 
                 for cluster in self.pMicroCluster.clusters:
+                    
+                    cluster.updateParameters(self.currentTimestamp)
                     
                     if cluster.weight < self.beta * self.mu:
                         self.pMicroCluster.clusters.pop(self.pMicroCluster.clusters.index(cluster))
@@ -326,13 +332,16 @@ class DenStream():
                             record = {
                                         'event': 'pRemoved',
                                         'time': self.currentTimestamp,
-                                        'cluster': cluster
+                                        'cluster': cluster,
+                                        'realTime': point.realTimestamp
                                     }
                             
                             self.history.append(record)
                         
                 
                 for cluster in self.oMicroCluster.clusters:
+
+                    cluster.updateParameters(self.currentTimestamp)
 
 #                    print 'cercare dentro outlier'
                     
@@ -351,7 +360,8 @@ class DenStream():
                             record = {
                                         'event': 'oRemoved',
                                         'time': self.currentTimestamp,
-                                        'cluster': cluster
+                                        'cluster': cluster,
+                                        'realTime': point.realTimestamp
                                     }
                             
                             self.history.append(record)

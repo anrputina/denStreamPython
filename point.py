@@ -8,10 +8,11 @@ Created on Thu Jun 29 17:48:21 2017
 
 class Point():
     
-    def __init__(self, value):
+    def __init__(self, value, timestamp):
         self.covered = False
         self.value = value
         self.timestamp = 0
+        self.realTimestamp = timestamp
     
     def getCovered(self):
         return self.covered
@@ -21,3 +22,6 @@ class Point():
     
     def setTimestamp(self, timestamp):
         self.timestamp = timestamp
+        
+    def setRealTimestamp(self, timestamp):
+        self.realTimestamp = timestamp

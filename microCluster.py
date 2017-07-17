@@ -37,7 +37,7 @@ class MicroCluster():
 
         self.covered = False
                         
-#    def insert(self, point, timestamp):
+#    def insert(self, po int, timestamp):
 #        self.N += 1
 #        self.weight += 1
 ##        self.lastEditTimeStamp = datetime.datetime.now()
@@ -59,6 +59,12 @@ class MicroCluster():
             self.points.append(point)
             self.N -= 1
             
+        self.weight = self.computeWeight(timestamp)
+        self.center = self.computeCenter(timestamp)
+        self.radius = self.computeRadius(timestamp)
+    
+    def updateParameters(self, timestamp):
+        
         self.weight = self.computeWeight(timestamp)
         self.center = self.computeCenter(timestamp)
         self.radius = self.computeRadius(timestamp)

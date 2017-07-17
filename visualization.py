@@ -7,7 +7,7 @@ Created on Sun Jul  9 10:35:07 2017
 """
 
 import matplotlib.pyplot as plt
-
+import matplotlib.pylab as pl
 
 class Visualization():
     
@@ -18,7 +18,7 @@ class Visualization():
         
         plotNumber = 0
         fig, ax = plt.subplots(len(features), sharex=True)
-        ax[0].set_title('Nome Grafico')
+#        ax[0].set_title('Nome Grafico')
 
         for feature in features:
             
@@ -37,7 +37,8 @@ class Visualization():
                                     color='g')
                             
             for event in truth.events:
-                ax[plotNumber].axvspan(event['startIndex'], event['endIndex'], alpha=0.5, color='red')
+                if event['type'] == 'single':
+                    ax[plotNumber].axvspan(event['startIndex'], event['endIndex'], alpha=0.5, color='red')
             
             if 'free-application-memory' in feature:
                 ax[plotNumber].set_ylabel('free memory')
@@ -48,3 +49,117 @@ class Visualization():
             plotNumber += 1
 
         ax[len(features)-1].set_xlabel('Simulation Step')
+  
+    def plotOutliersInteractive(self, features, df, outliers, merged, truth, stepsTrain=10):
+        
+        plotNumber = 0
+        fig, ax = pl.subplots(len(features), sharex=True)
+#        ax[0].set_title('Nome Grafico')
+
+        for feature in features:
+            
+            ax[plotNumber].plot(df[feature].values)
+            
+            for outlier in outliers:
+                ax[plotNumber].plot(stepsTrain+outlier['time'],
+                                    df[feature].iloc[stepsTrain+outlier['time']],
+                                    marker='o',
+                                    color='r')
+                
+            for mergePoint in merged:
+                ax[plotNumber].plot(stepsTrain+mergePoint,\
+                                    df[feature].iloc[stepsTrain+mergePoint],\
+                                    marker='x',\
+                                    color='g')
+                            
+            for event in truth.events:
+                if event['type'] == 'single':
+                    ax[plotNumber].axvspan(event['startIndex'], event['endIndex'], alpha=0.5, color='red')
+            
+            if 'free-application-memory' in feature:
+                ax[plotNumber].set_ylabel('free memory')
+            elif 'vrf__update-messages-received' in feature:
+                ax[plotNumber].set_ylabel('update msg rx')
+            else:
+                ax[plotNumber].set_ylabel(feature)    
+            plotNumber += 1
+
+        ax[len(features)-1].set_xlabel('Simulation Step')
+     
+#    def plotOutliersInteractiveTimestamp(self, features, df, outliers, merged, truth, stepsTrain=10, time):
+#        
+#        plotNumber = 0
+#        fig, ax = pl.subplots(len(features), sharex=True)
+##        ax[0].set_title('Nome Grafico')
+#
+#        for feature in features:
+#            
+#            ax[plotNumber].plot(time, df[feature].values)
+#            
+#            for outlier in outliers:
+#                ax[plotNumber].plot(stepsTrain+outlier['time'],
+#                                    df[feature].iloc[stepsTrain+outlier['time']],
+#                                    marker='o',
+#                                    color='r')
+#                
+#            for mergePoint in merged:
+#                ax[plotNumber].plot(stepsTrain+mergePoint,\
+#                                    df[feature].iloc[stepsTrain+mergePoint],\
+#                                    marker='x',\
+#                                    color='g')
+#                            
+#            for event in truth.events:
+#                if event['type'] == 'single':
+#                    ax[plotNumber].axvspan(event['startIndex'], event['endIndex'], alpha=0.5, color='red')
+#            
+#            if 'free-application-memory' in feature:
+#                ax[plotNumber].set_ylabel('free memory')
+#            elif 'vrf__update-messages-received' in feature:
+#                ax[plotNumber].set_ylabel('update msg rx')
+#            else:
+#                ax[plotNumber].set_ylabel(feature)    
+#            plotNumber += 1
+#
+#        ax[len(features)-1].set_xlabel('Simulation Step')
+        
+#    def plotSingleOutlier(self, feature, df, outliers, mergeg, truth, stepsTrain=10):
+#        
+#        fig, ax = plt.subplots()
+#        
+#        ax.plot(df[feature].values)
+#        
+#        for outlier in outliers:
+#            ax.plot(stepsTrain + outlier['time'],
+#                    df[feature].iloc[stepsTrain+outlier['time']],
+#                    marker='o',
+#                    color='r')
+#            
+#        for mergePoint in merged:
+#            ax[plotNumber].plot(stepsTrain+mergePoint,\
+#                                df[feature].iloc[stepsTrain+mergePoint],\
+#                                marker='x',\
+#                                color='g')
+#            
+#        for event in truth.events:
+#            ax[plotNumber].axvspan(event['startIndex'], event['endIndex'], alpha=0.5, color='red')
+#            
+#        
+#            
+#            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
