@@ -54,7 +54,7 @@ class MicroCluster():
         self.lastEditTimeStamp = timestamp
         self.points.append(point)
         
-        if self.N == 101:
+        if self.N == 31:
             self.points.pop()
             self.points.append(point)
             self.N -= 1

@@ -57,7 +57,7 @@ class DenStream():
             self.currentTimestamp = time.time()
 
         
-        self.lamb = 0.2
+        self.lamb = 0.5
         self.inizialized = False
         
         #For debug and performance evaluation
@@ -88,6 +88,7 @@ class DenStream():
         self.oMicroCluster = Cluster()
                 
         self.tp = round(1/self.lamb * math.log((self.beta*self.mu)/(self.beta*self.mu-1)))+1
+#        print 'tp: ' + str(self.tp)
                 
     def initialDBScan(self):
         

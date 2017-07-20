@@ -25,227 +25,231 @@ def normalize_matrix(df):
 
 import numpy as np
 ### PREPARE DATA
-#df = pd.read_csv('leaf1_5min.csv').dropna().drop('Unnamed: 0', axis=1)
-df = pd.read_csv('leaf1_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
-#df = pd.read_csv('leaf2clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
-#df = pd.read_csv('spine4_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
-#df = pd.read_csv('leaf8_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
-#df = pd.read_csv('spine2_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
-#df = pd.read_csv('dr01_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
-#df = pd.read_csv('dr01_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
-#df = pd.read_csv('spine3_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
-#df = pd.read_csv('leaf3_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
-#df = pd.read_csv('leaf6_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
-#df = pd.read_csv('leaf7_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
-#df = pd.read_csv('leaf8_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
-#df = pd.read_csv('leaf5_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
-#df = pd.read_csv('spine1_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
+
+startingSimulation = tm.time()
 
 
-time = df['time']
 
-#epoch = df['epoch']
-df = df.drop(['time'], axis=1)
-df = df[:500]
-
-dfNormalized = normalize_matrix(df).dropna(axis=1)
-#dfNormalized = df
-
+samplesConsidered = 500
 sampleSkip = 60
 
-bufferDf = dfNormalized[10:sampleSkip]
-testDf = dfNormalized[sampleSkip:]
-
-
-### Neighbors ### 
-
-#dataset = normalize_matrix(bufferDf).dropna(axis=1)
-##dataset = bufferDf
-#neigh = NearestNeighbors()
-#neigh.fit(dataset) 
-#prova = neigh.kneighbors(dataset, 20, return_distance=True)
-#
-#lista = pd.DataFrame()
-#dist = pd.DataFrame(prova[0]).drop(0, axis=1)
-#for row in range(1, dist.shape[1]+1):
-#    lista = pd.concat([lista, dist[row]], ignore_index=True)
-#
-#plt.plot(lista.sort_values(0).values)
-
-
-
-### DENSTREAM INITIALIZATION ### 
-#bufferInit = []
-#for sampleNumber in range(len(bufferDf)):
-#    sample = Point(bufferDf.iloc[sampleNumber].tolist())
-#    bufferInit.append(sample)
-#
-
-#from sklearn.cluster import DBSCAN
-#db = DBSCAN(eps=15, min_samples=5, algorithm='brute').fit(bufferDf)
-#a = db.labels_
-##
-#
-#
-#den = DenStream(horizon=150, epsilon=5, minPoints=4, beta=0.2, mu=10, initPointOption=2, startingPoints=bufferInit)
-#den = DenStream(horizon=150, epsilon=2.5, minPoints=5, beta=0.2, mu=10, initPointOption=2, startingPoints=bufferDf)
-den = DenStream(horizon=150, epsilon=10, minPoints=5, beta=0.2, mu=10, initPointOption=2, startingPoints=bufferDf)
-den.setHistory(True)
-####
-den.runInitialization()
-#######
-simulationTime = []
-
-for sampleNumber in range(len(testDf)):
-#for sampleNumber in range(1,8):
-    start = tm.time()
-    sample = testDf.iloc[sampleNumber]
-    den.runOnNewPoint(Point(sample.values, time.iloc[sampleNumber]))
-    end = tm.time()
-    simulationTime.append(end-start)
-    
-#### ground truth times ###
+#### ground truth ###
 
 truth = groundTruth()
-truth.simulationBGP_CLEAR()
+truth.simulationBGP_CLEAR3()
 
 #############################
 
-visual = Visualization()
+resultSimulation = {}
 
-result = den.history
-outliers = []
-merged = []
-for event in result:
+nodeSimulationList = ['leaf1', 'leaf2', 'leaf3', 'leaf5', 'leaf6', 'leaf7', 'leaf8',
+                      'spine1', 'spine2', 'spine3', 'spine4']
+
+#nodeSimulationList = ['leaf8']
+
+for node in nodeSimulationList:
     
-    if event['event'] == 'Outlier':
-        outliers.append(event)
-        
-    if event['event'] == 'Merged':
-        merged.append(event['time'])
-        
-#features = ['paths-count', '0/RP0/CPU0free-application-memory', 'vrf__update-messages-received', 'HundredGigE0/0/0/0packets-sent']        
-features = ['paths-count', '0/RP0/CPU0free-application-memory', 'vrf__update-messages-received']        
-#visual.plotOutliers(features, df, outliers, merged, truth, sampleSkip-1)
-visual.plotOutliersInteractive(features, df, outliers, merged, truth, sampleSkip-1)
+    print node
+    
+    df = pd.read_csv(node+'_clearbgp.csv').dropna().drop('Unnamed: 0', axis=1)
 
-#features = ['paths-count', '0/RP0/CPU0free-application-memory']
-#fig, ax = plt.subplots(2)
-#plotNumber = 0
-#for feature in features:
-#    ax[plotNumber].plot(df[feature])
+    df['time'] = df['time'] / 1000000
+
+    time = df['time']
+    time = time[:samplesConsidered]
+
+    df = df.drop(['time'], axis=1)
+    df = df[:samplesConsidered]
+
+    dfNormalized = normalize_matrix(df).dropna(axis=1)
+
+    bufferDf = dfNormalized[10:sampleSkip]
+    testDf = dfNormalized[sampleSkip:]
+
+
+    den = DenStream(horizon=150, epsilon=10, minPoints=5, beta=0.2, mu=6, initPointOption=2, startingPoints=bufferDf)
+    den.setHistory(True)
+####
+    den.runInitialization()
+#######
+#    simulationTime = []
+
+#    counter = 0
+    for sampleNumber in range(len(testDf)):
+    #for sampleNumber in range(1,8):
+    #    print counter
+#        start = tm.time()
+        sample = testDf.iloc[sampleNumber]
+        den.runOnNewPoint(Point(sample.values, time.iloc[sampleNumber]))
+#        end = tm.time()
+#        simulationTime.append(end-start)
+    #    counter += 1
+    
+
+
+#    visual = Visualization()
 #    
-#    for outlier in outliers:
-#        ax[plotNumber].plot(outlier['time']+sampleSkip, df.iloc[outlier['time']+sampleSkip-1][feature], color='r', marker='o')
-#    
-#    plotNumber += 1
-
-### label ###
-time = time[:500]
-result = time < 1
-df['labels'] = ['clear'] * len(time)
-for event in truth.events:
-    
-    check = (time >= event['startTime']) & (time <= event['endTime'])
-
-    df['labels'].loc[check] = event['name']
-
-    result = result | check
-
-df['outlier'] = result 
-
-
-### outputs ###
-output = [False] * 60
-result = den.history
-for  event in result:
-    
-    if event['event'] == 'Outlier':
-        output.append(True)
-    if event['event'] == 'Merged':
-        output.append(False)
-
-df['result'] = output
+#    result = den.history
+#    outliers = []
+#    merged = []
+#    for event in result:
+#        
+#        if event['event'] == 'Outlier':
+#            outliers.append(event)
+#            
+#        if event['event'] == 'Merged':
+#            merged.append(event)
+#            
+#    #features = ['paths-count', '0/RP0/CPU0free-application-memory', 'vrf__update-messages-received', 'HundredGigE0/0/0/0packets-sent']        
+#    features = ['paths-count', '0/RP0/CPU0free-application-memory', 'vrf__update-messages-received']        
+#    #visual.plotOutliers(features, df, outliers, merged, truth, sampleSkip-1)
+#    #visual.plotOutliersInteractive(features, df, outliers, merged, truth, sampleSkip-1)
+#    visual.plotOutliersInteractiveTimestamp(features, df, outliers, merged, truth, sampleSkip-1, time=time)
 #
-tp = (df['outlier'] == True) & (df['result'] == True)
-tn = (df['outlier'] == False) & (df['result'] == False)
-
-fp = (df['outlier'] == False) & (df['result'] == True)
-fn = (df['outlier'] == True) & (df['result'] == False)
-
-precision = tp.sum() / float((tp.sum() + fp.sum()))
-recall = tp.sum() / float((tp.sum() + fn.sum()))
+##    visual.plotHistTimeDifference([df, df4])
 
 
 
-
-#for event in truth.events:
+#    ### label ###
+#    result = time < 1
+#    df['labels'] = ['clear'] * len(time)
+#    for event in truth.events:
+#        
+#        check = (time >= event['startTime']) & (time <= event['endTime'])
 #    
-##    check = (time >= event['startTime']) & (time <= event['endTime'])
-#
-#    detection = df['result'][(time >= event['startTime']) & (time <= event['endTime'])]
+#        df['labels'].loc[check] = event['name']
 #    
-#    if detection > 0:
-#        tp2 += 1
-#    else:
-#        fn2 += 1
+#        result = result | check
 #    
-#    detection = df['result']
-#    
-#    
-#    print detection.sum()
-
-tp2 = 0
-tn2 = 0
-fn2 = 0
-fp2 = 0
-
-
-for eventNumber in range(len(truth.events)):
+#    df['outlier'] = result 
     
-    event = truth.events[eventNumber]
     
-    detection = df['result'][(time >= event['startTime']) & (time <= event['endTime'])]
+    ### outputs ###
+    output = [False] * sampleSkip
+    result = den.history
+    for  event in result:
+        
+        if event['event'] == 'Outlier':
+            output.append(True)
+        if event['event'] == 'Merged':
+            output.append(False)
     
-    if detection.sum() > 0:
-        tp2 += 1
-    else:
-        fn2 += 1  
+    df['result'] = output
+    #
+
+    stats = statistics(node)
+    
+    probabilityDetection = stats.findProbabilityDetection(df, truth, time)
+    delay = stats.findDelayDetection(df, truth, time)
+
+    resultSimulation[node] = {
+            'pDetection': probabilityDetection,
+            'delay': delay
+          }
+    
+endingSimulation = tm.time()
+
+
+#### DELAYS ###
+delays = np.zeros(shape=(5,3))
+#delays[:] = np.inf
+counters = np.zeros(shape=(5,3))
+
+for key, value in resultSimulation.iteritems():
+    
+    for k in range(1, 6):
         
-    if eventNumber != len(truth.events) -1 :
-        detectionClear = df['result'][(time > event['endTime']) & (time < truth.events[eventNumber+1]['startTime'])]
-    else:
-        detectionClear = df['result'][(time > event['endTime'])]
+        for depth in range(3):
+            
+            if (value['delay'][k][depth] != np.inf):
+                
+#                if value['delay'][k][depth] < delays[k-1][depth]:
+#                    delays[k-1][depth] = value['delay'][k][depth]
+
+                delays[k-1][depth] += value['delay'][k][depth]
+                counters[k-1][depth] += 1
+            
+resultsDivided = np.divide(delays, counters)         
+
+
+fig, ax= plt.subplots(figsize=(6,6))
+for k in range(4):
+    ax.plot([0, 1, 2], np.divide(resultsDivided[k], 1000.), label='delay#K' + str(k+1))
+    
+ax.set_xlabel('#hops')
+ax.set_ylabel('detection delay [s]')
+
+plt.xticks([0,1,2], [0,1,2], rotation='horizontal')
+
+# Shrink current axis's height by 10% on the bottom
+box = ax.get_position()
+ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                 box.width, box.height * 0.9])
+
+# Put a legend below current axis
+ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),
+          fancybox=True, shadow=True, ncol=5)
+
+#ax.axis([0, 2, 0, 35])
+ax.grid()
+
+ax.set_title('Min delay')
+
+#plt.savefig('minDelay.png',bbox_inches='tight')
+
+
+### p detection ###
+pDetections = np.zeros(shape=(5,3))
+countersDetections = np.zeros(shape=(5,3))
+
+for key, value in resultSimulation.iteritems():
+    
+    for k in range(1, 6):
         
-    if detectionClear.sum() > 0 :
-        fp2 += 1
+        for depth in range(3):
+            
+            if (value['pDetection'][k][depth] != -1):
+            
+                pDetections[k-1][depth] += value['pDetection'][k][depth]
+                countersDetections[k-1][depth] += 1
+            
+resultsDivided = np.divide(pDetections, countersDetections)   
+
+
+fig, ax = plt.subplots(figsize=(6,6))
+
+for k in range(4):
+    
+    if k == 3:
+        ax.plot([0,1,2], resultsDivided[k], label='detection#K'+str(k+1), linestyle='--', linewidth=2.0, color='black')
     else:
-        tn2 += 1
-        
-precision = tp2/(float(tp2+fp2))
-recall = tp2/(float(tp2+fn2))
+        ax.plot([0,1,2], resultsDivided[k], label='detection#K'+str(k+1))
+
+
+ax.set_xlabel('#hops')
+ax.set_ylabel('detection probability [p]')
+plt.xticks([0,1,2], [0,1,2], rotation='horizontal')
+
+box = ax.get_position()
+ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                 box.width, box.height * 0.9])
+
+ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10),
+          fancybox=True, shadow=True, ncol=5)
+
+ax.axis([0, 2, 0, 1.1])
+ax.grid()
+
+ax.set_title('Detection Probability')
+#plt.savefig("probabilityDetection.png", bbox_inches='tight')
 
 
 
-pDetection1 = [0] * 3
-pDetection2 = [0] * 3
-pDetection3 = [0] * 3
 
 
-node='leaf1'
-stats = statistics(node)
 
-boh = stats.findProbabilityDetection(df, truth)
-delay = stats.findDelayDetection(df, truth)
 
-plt.figure()
-for key, value in boh.iteritems():
-    plt.plot(value, label=key, color='r')
-#plt.legend()
-#plt.axis([0,2,0,1.1])
 
-for key, value in delay.iteritems():
-    plt.plot(value, label=key, marker='x', color='g')
-#    plt.plot(np.divide(value, float(max(value))), label=key, marker='x', color='g')
-#plt.legend(loc=4)
-#plt.axis([0,2,0,1.1])
+
+
+

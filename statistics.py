@@ -82,7 +82,7 @@ class statistics():
         return records
              
 
-    def findProbabilityDetection(self, df, truth):
+    def findProbabilityDetection(self, df, truth, time):
                 
 
         depthTopology = 3
@@ -94,7 +94,9 @@ class statistics():
                     
             for event in truth.events:
                 
-                currentEvent = df[df['labels']==event['name']]
+                check = (time >= event['startTime']) & (time <= event['endTime'])
+                currentEvent = df[check]
+                
                 indexes = currentEvent[currentEvent['result']==True].index
     
                 position = findDistance(self.node, event['node'])
@@ -133,7 +135,7 @@ class statistics():
 
         return result                
             
-    def findDelayDetection(self, df, truth):
+    def findDelayDetection(self, df, truth, time):
         
         depthTopology = 3
         result = {}
@@ -144,15 +146,34 @@ class statistics():
             
             for event in truth.events:
                 
-                currentEvent = df[df['labels']==event['name']]
+                    
+                check = (time >= event['startTime']) & (time <= event['endTime'])
+                                                
+                currentEvent = df[check]
                 indexes = currentEvent[currentEvent['result']==True].index
+                times = time[indexes]
                 
                 position = findDistance(self.node, event['node'])
-                
+                                
                 if len(indexes) > k-1:    
                     delayDetection.addDetection(position)
-                    delayDetection.addDelay(position, indexes[k-1] - event['startIndex'])
-                    delayDetection.addDelayMin(position, indexes[k-1] - event['startIndex'])
+                    delayDetection.addDelay(position, times.iloc[k-1] - event['startTime'])
+                    
+#                    print '---' + str(k)
+#                    print 'problem: '+event['node']
+#                    print 'problem: '+event['name']
+#                    print position
+#                    print times.iloc[k-1] - event['startTime']
+                    
+                    if (times.iloc[k-1] - event['startTime'] < 0):
+                        print 'HEREEEEE'
+#                        print '---' + str(k)
+#                        print 'problem: '+event['node']
+#                        print 'problem: '+event['name']
+#                        print position
+#                        print times.iloc[k-1] - event['startTime']
+                    
+                    delayDetection.addDelayMin(position, times.iloc[k-1] - event['startTime'])
 
                 else:
                     delayDetection.addEvents(position)
