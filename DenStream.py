@@ -35,8 +35,7 @@ def distance(pointA, pointB):
     
 class DenStream():
     
-    def __init__(self, horizon=1000, epsilon=0.1, minPoints=4, beta=1, mu=1, initPointOption=2, startingPoints=[10,11]):
-        self.horizon = horizon
+    def __init__(self, lamb, epsilon=0.1, minPoints=4, beta=1, mu=1, initPointOption=2, startingPoints=[10,11]):
         self.epsilon = epsilon
         self.minPoints = minPoints
         self.beta = beta
@@ -57,7 +56,7 @@ class DenStream():
             self.currentTimestamp = time.time()
 
         
-        self.lamb = 0.5
+        self.lamb = lamb
         self.inizialized = False
         
         #For debug and performance evaluation
@@ -74,21 +73,17 @@ class DenStream():
         
     def resetLearningImpl(self):
         
-#        self.currentTimestamp = datetime.datetime.now()
-
         if simulation:
             self.currentTimestamp = 0
         else:
             self.currentTimestamp = time.time()
 
-        #self.lamb = -math.log(self.weightThreshold) / math.log(2) / float(self.horizon)
         self.inizialized = False
         
         self.pMicroCluster = Cluster()
         self.oMicroCluster = Cluster()
                 
         self.tp = round(1/self.lamb * math.log((self.beta*self.mu)/(self.beta*self.mu-1)))+1
-#        print 'tp: ' + str(self.tp)
                 
     def initialDBScan(self):
         
@@ -366,75 +361,3 @@ class DenStream():
                                     }
                             
                             self.history.append(record)
-                
-            
-#points=[]
-#
-#for x in [[1,1,1], [2,1,1], [3,1,1], [2,1,1], [1,1,1], [76,1,1], [77,1,1], [78,1,1], [79,1,1], [130,1,1], [131,1,1], [132,1,1], [133,1,1]]:
-#    p = Point(x)
-#    points.append(p)
-#  
-#den = DenStream(horizon=150, epsilon=10, minPoints=2, beta=0.2, mu=10, initPointOption=2, startingPoints=points)
-#
-#
-#p = Point([2,1,1])
-#den.runOnNewPoint(p)
-#print den.pMicroCluster.clusters[0].computeCenter(den.currentTimestamp)
-#print den.pMicroCluster.clusters[0].computeRadius(den.currentTimestamp)
-#del p
-
-#p2 = Point([2,2,1])
-#den.runOnNewPoint(p2)
-#print den.pMicroCluster.clusters[0].computeCenter(den.currentTimestamp)
-#print den.pMicroCluster.clusters[0].computeRadius(den.currentTimestamp)
-#del p2
-#
-#p = Point([3,2,1])
-#den.runOnNewPoint(p)
-#print den.pMicroCluster.clusters[0].computeCenter(den.currentTimestamp)
-#print den.pMicroCluster.clusters[0].computeRadius(den.currentTimestamp)
-#del p
-
-##
-#p = Point([75,1,1])
-#den.runOnNewPoint(p)
-#del p
-#
-#p = Point([130,1,1], 4)
-#den.runOnNewPoint(p)
-#del p
-
-#
-#
-#
-#p = Point([7,1,1], 5)
-#den.runOnNewPoint(p)
-#p = Point([8,1])
-#den.runOnNewPoint(p)
-#p = Point([9,1])
-#den.runOnNewPoint(p)
-#p = Point([10,1])
-#den.runOnNewPoint(p)
-
-#p = Point([13,1])
-#den.runOnNewPoint(p)
-#p = Point([14,1])
-#den.runOnNewPoint(p)
-#p = Point([15,1])
-#den.runOnNewPoint(p)
-#p = Point([16,1])
-#den.runOnNewPoint(p)
-
-
-#offlineScan = denDBScan(10, 1, den.pMicroCluster.clusters, den.currentTimestamp)
-#offlineScan.run()
-
-#p = Point([74,1])
-#den.runOnNewPoint(p)
-#p = Point([73,1])
-#den.runOnNewPoint(p)
-#p = Point([25,7])
-#den.runOnNewPoint(p)
-#
-#p = Point([77,1000])
-#den.runOnNewPoint(p)
