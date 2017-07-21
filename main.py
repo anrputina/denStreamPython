@@ -79,25 +79,32 @@ def worker(node):
                 raise
                 
     out_file = open(filename+node+'.csv',"w")
-    row = 'node, epsilon, lambda, beta, mu'
+    row = 'node, epsilon, lambda, beta, mu, '
     
-    for k in range(5):
+    for k in range(1,6):
         
         for depth in range(3):
                         
-            row = row + 'pdetectk' + str(k) + 'd' + str(depth) + ','
+            row = row + 'pdetectk' + str(k) + 'd' + str(depth) + ', '
+    
+    for k in range(1,6):
+    
+        for depth in range(3):
+                        
+            row = row + 'delayK' + str(k) + 'd' + str(depth) + ', '
     
     row = row + 'duration\n'
     out_file.write(row)
     
-    lambdas = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    betas = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    mus = [6, 8, 10, 12, 14, 16, 18, 20]
-    epsilons = [6, 8, 10, 12, 14, 16, 18, 20]
+#    lambdas = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+#    betas = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+#    mus = [6, 8, 10, 12, 14, 16, 18, 20]
+#    epsilons = [6, 8, 10, 12, 14, 16, 18, 20]
     
-#    lambdas = [0.5]
-#    betas = [0.2]
-#    mus = [8]
+    lambdas = [0.5]
+    betas = [0.2]
+    mus = [8]
+    epsilons = [6,8]
     
     for lamb in lambdas:
         for beta in betas:
@@ -169,18 +176,18 @@ def worker(node):
         #                out_file.write(',')
         
         
-        
-                    row = node + ',' + str(epsilon) + ',' + str(lamb) + ',' + str(beta) + ',' + str(mu) + ','
+                    row = ''
+                    row = node + ', ' + str(epsilon) + ', ' + str(lamb) + ', ' + str(beta) + ', ' + str(mu) + ', '
                             
                     for key, item in probabilityDetection.iteritems():
                         for pdepth in item:    
-                            row = row + str(pdepth) + ','
+                            row = row + str(pdepth) + ', '
                             
                     for key, item in delay.iteritems():
                         for deldepth in item:
-                            row = row + str(deldepth) + ','
+                            row = row + str(deldepth) + ', '
                             
-                    row = row + str(endingSimulation-startingSimulation) + '\n'
+                    row = row + str(endingSimulation-startingSimulation) + ' \n'
                     
                     out_file.write(row)
                 
