@@ -45,10 +45,10 @@ truth.simulationBGP_CLEAR3()
 
 #############################
 
-nodeSimulationList = ['leaf1', 'leaf2', 'leaf3', 'leaf5', 'leaf6', 'leaf7', 'leaf8',
-                      'spine1', 'spine2', 'spine3', 'spine4']
+#nodeSimulationList = ['leaf1', 'leaf2', 'leaf3', 'leaf5', 'leaf6', 'leaf7', 'leaf8',
+#                      'spine1', 'spine2', 'spine3', 'spine4']
 
-#nodeSimulationList = ['leaf8']
+nodeSimulationList = ['leaf8']
 
 def worker(node):
         
@@ -70,41 +70,41 @@ def worker(node):
     bufferDf = dfNormalized[10:sampleSkip]
     testDf = dfNormalized[sampleSkip:]
     
-    filename = "./Results/"
-    if not os.path.exists(os.path.dirname(filename)):
-        try:
-            os.makedirs(os.path.dirname(filename))
-        except OSError as exc:
-            if exc.errno != errno.EEXIST:
-                raise
-                
-    out_file = open(filename+node+'.csv',"w")
-    row = 'node, epsilon, lambda, beta, mu, '
-    
-    for k in range(1,6):
-        
-        for depth in range(3):
-                        
-            row = row + 'pdetectk' + str(k) + 'd' + str(depth) + ', '
-    
-    for k in range(1,6):
-    
-        for depth in range(3):
-                        
-            row = row + 'delayK' + str(k) + 'd' + str(depth) + ', '
-    
-    row = row + 'duration\n'
-    out_file.write(row)
+#    filename = "./Results/"
+#    if not os.path.exists(os.path.dirname(filename)):
+#        try:
+#            os.makedirs(os.path.dirname(filename))
+#        except OSError as exc:
+#            if exc.errno != errno.EEXIST:
+#                raise
+#                
+#    out_file = open(filename+node+'.csv',"w")
+#    row = 'node, epsilon, lambda, beta, mu, '
+#    
+#    for k in range(1,6):
+#        
+#        for depth in range(3):
+#                        
+#            row = row + 'pdetectk' + str(k) + 'd' + str(depth) + ', '
+#    
+#    for k in range(1,6):
+#    
+#        for depth in range(3):
+#                        
+#            row = row + 'delayK' + str(k) + 'd' + str(depth) + ', '
+#    
+#    row = row + 'duration\n'
+#    out_file.write(row)
     
 #    lambdas = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 #    betas = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 #    mus = [6, 8, 10, 12, 14, 16, 18, 20]
 #    epsilons = [6, 8, 10, 12, 14, 16, 18, 20]
     
-    lambdas = [0.5]
+    lambdas = [0.2]
     betas = [0.2]
     mus = [8]
-    epsilons = [6,8]
+    epsilons = [20]
     
     for lamb in lambdas:
         for beta in betas:
@@ -121,6 +121,7 @@ def worker(node):
                     for sampleNumber in range(len(testDf)):
                         sample = testDf.iloc[sampleNumber]
                         den.runOnNewPoint(Point(sample.values, time.iloc[sampleNumber]))
+                        tm.sleep(0.1)
                     endingSimulation = tm.time()
                     ### END SIMULATION ###
                         
@@ -140,24 +141,24 @@ def worker(node):
                     probabilityDetection = stats.findProbabilityDetection(df, truth, time)
                     delay = stats.findDelayDetection(df, truth, time)
                     
-        #            visual = Visualization()
-        #            
-        #            result = den.history
-        #            outliers = []
-        #            merged = []
-        #            for event in result:
-        #                
-        #                if event['event'] == 'Outlier':
-        #                    outliers.append(event)
-        #                    
-        #                if event['event'] == 'Merged':
-        #                    merged.append(event)
-        #                    
-        #            #features = ['paths-count', '0/RP0/CPU0free-application-memory', 'vrf__update-messages-received', 'HundredGigE0/0/0/0packets-sent']        
-        #            features = ['paths-count', '0/RP0/CPU0free-application-memory', 'vrf__update-messages-received']        
-        #            #visual.plotOutliers(features, df, outliers, merged, truth, sampleSkip-1)
-        #            #visual.plotOutliersInteractive(features, df, outliers, merged, truth, sampleSkip-1)
-        #            visual.plotOutliersInteractiveTimestamp(features, df, outliers, merged, truth, sampleSkip-1, time=time)
+                    visual = Visualization()
+                    
+                    result = den.history
+                    outliers = []
+                    merged = []
+                    for event in result:
+                        
+                        if event['event'] == 'Outlier':
+                            outliers.append(event)
+                            
+                        if event['event'] == 'Merged':
+                            merged.append(event)
+                            
+                    #features = ['paths-count', '0/RP0/CPU0free-application-memory', 'vrf__update-messages-received', 'HundredGigE0/0/0/0packets-sent']        
+                    features = ['paths-count', '0/RP0/CPU0free-application-memory', 'vrf__update-messages-received']        
+                    #visual.plotOutliers(features, df, outliers, merged, truth, sampleSkip-1)
+                    #visual.plotOutliersInteractive(features, df, outliers, merged, truth, sampleSkip-1)
+                    visual.plotOutliersInteractiveTimestamp(features, df, outliers, merged, truth, sampleSkip-1, time=time)
         
                     
                     
@@ -176,21 +177,21 @@ def worker(node):
         #                out_file.write(',')
         
         
-                    row = ''
-                    row = node + ', ' + str(epsilon) + ', ' + str(lamb) + ', ' + str(beta) + ', ' + str(mu) + ', '
-                            
-                    for key, item in probabilityDetection.iteritems():
-                        for pdepth in item:    
-                            row = row + str(pdepth) + ', '
-                            
-                    for key, item in delay.iteritems():
-                        for deldepth in item:
-                            row = row + str(deldepth) + ', '
-                            
-                    row = row + str(endingSimulation-startingSimulation) + ' \n'
-                    
-                    out_file.write(row)
-                
+#                    row = ''
+#                    row = node + ', ' + str(epsilon) + ', ' + str(lamb) + ', ' + str(beta) + ', ' + str(mu) + ', '
+#                            
+#                    for key, item in probabilityDetection.iteritems():
+#                        for pdepth in item:    
+#                            row = row + str(pdepth) + ', '
+#                            
+#                    for key, item in delay.iteritems():
+#                        for deldepth in item:
+#                            row = row + str(deldepth) + ', '
+#                            
+#                    row = row + str(endingSimulation-startingSimulation) + ' \n'
+#                    
+#                    out_file.write(row)
+    return den
 ##### DELAYS ###
 #delays = np.zeros(shape=(5,3))
 ##delays[:] = np.inf
@@ -231,9 +232,10 @@ def worker(node):
 
 if __name__ == '__main__':
     
-    for node in nodeSimulationList:
-        
-        p = Process(target=worker, args=(node,))
-        p.start()
-#        p.join()
+    den = worker('leaf8')
+#    for node in nodeSimulationList:
+#        
+#        p = Process(target=worker, args=(node,))
+#        p.start()
+##        p.join()
 

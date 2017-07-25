@@ -141,6 +141,8 @@ class DenStream():
         self.pMicroCluster.insert(mc)
         
         self.epsilon = self.pMicroCluster.clusters[0].computeRadius(self.currentTimestamp) * 1.5
+        
+#        print self.pMicroCluster.clusters[0].computeWeight(self.currentTimestamp)
 
                 
     def expandCluster(self, mc, neighborhood):
@@ -163,10 +165,8 @@ class DenStream():
                 dist = distance(point, newPoint)
                 #print 'distance ' + str(point.value) + ' from ' + str(newPoint.value) + ' = ' + str(dist)
                 
-#                print dist
                 
                 if (dist<self.epsilon):
-#                    print 'ok'
                     neighbourIDs.append(newPoint)
         
         return neighbourIDs
@@ -201,7 +201,22 @@ class DenStream():
                 minCluster = cluster
                 
         return minCluster
+       
+    def updateAll(self, mc):
+        
+        for cluster in self.pMicroCluster.clusters:
             
+            if (cluster != mc):
+                print 'QUI10'
+                cluster.noNewPoints()
+                
+        for cluster in self.oMicroCluster.clusters:
+            
+            if (cluster != mc):
+                print 'QUI20'
+                cluster.noNewPoints()
+        
+        
     def runInitialization(self):
         self.resetLearningImpl()
 #        self.initialDBScanSciLearn()
@@ -248,9 +263,7 @@ class DenStream():
 #                if (backupClosestCluster.computeRadius(self.currentTimestamp) <= self.epsilon):
                 if (backupClosestCluster.radius <= self.epsilon):
 
-                    
                     closestMicroCluster.insertPoint(point, self.currentTimestamp)
-
                     merged = True
                 
                     if self.historyBool:
@@ -264,8 +277,9 @@ class DenStream():
                         
                         self.history.append(record)
                     
+                    self.updateAll(closestMicroCluster)
+                    
 #                    self.pMicroCluster.show()
-#                    print 'MERGED'
 
             
             if not merged and len(self.oMicroCluster.clusters) != 0:
@@ -291,12 +305,17 @@ class DenStream():
                                 }
                         
                         self.history.append(record)
+
                     
                     merged = True
                     
                     if (closestMicroCluster.weight > self.beta * self.mu):
                         self.oMicroCluster.clusters.pop(self.oMicroCluster.clusters.index(closestMicroCluster))
                         self.pMicroCluster.insert(closestMicroCluster)
+                        print 'oCluster => pCluster'
+
+                        
+                    self.updateAll(closestMicroCluster)
                         
                     
             if not merged:
@@ -313,7 +332,9 @@ class DenStream():
                             }
                     
                     self.history.append(record)
-                    
+                
+                self.updateAll(newOutlierMicroCluster)
+                
             if self.currentTimestamp % self.tp == 0:
                                 
                 for cluster in self.pMicroCluster.clusters:

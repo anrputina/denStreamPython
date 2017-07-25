@@ -54,15 +54,30 @@ class MicroCluster():
         self.lastEditTimeStamp = timestamp
         self.points.append(point)
         
-        if self.N == 31:
-            self.points.pop()
-            self.points.append(point)
-            self.N -= 1
+#        if self.N == 31:
+#            self.points.pop()
+#            self.points.append(point)
+#            self.N -= 1
             
-        self.weight = self.computeWeight(timestamp)
-        self.center = self.computeCenter(timestamp)
-        self.radius = self.computeRadius(timestamp)
-    
+#        for pos in range(len(point.value)):
+#            self.LS[pos] += point.value[pos]
+#            self.SS[pos] += point.value[pos] * point.value[pos]
+            
+#        self.weight += 1
+        
+#        self.center = np.divide(self.LS, self.weight)
+#        self.computeRadius(timestamp)
+        
+#        self.weight = self.computeWeight(timestamp)
+#        self.center = self.computeCenter(timestamp)
+#        self.radius = self.computeRadius(timestamp)
+        
+    def noNewPoints(self):
+        
+        self.LS = np.multiply(self.LS, math.pow(2, -self.lamb * 1))
+        self.SS = np.multiply(self.SS, math.pow(2, -self.lamb * 1))
+        self.weight = np.multiply(self.weight, math.pow(2, -self.lamb * 1))
+            
     def updateParameters(self, timestamp):
         
         self.weight = self.computeWeight(timestamp)
@@ -147,6 +162,8 @@ class MicroCluster():
             for pos in range(len(self.LS)):    
                 cf1[pos] += math.pow(2, -self.lamb * (timestamp - point.timestamp)) * point.value[pos]
         
+        self.LS = cf1
+        
         return cf1
     
     def computeCF2(self, timestamp):
@@ -158,7 +175,8 @@ class MicroCluster():
             for pos in range(len(self.LS)):
                 
                 cf2[pos] += math.pow(2, -self.lamb * (timestamp - point.timestamp)) * point.value[pos] * point.value[pos]
-                
+           
+        self.SS = cf2
         return cf2
                 
     def computeCenter(self, timestamp):
@@ -168,7 +186,7 @@ class MicroCluster():
         
         c = cf1 / w
         
-#        self.center = c
+        self.center = c
         
         return c
 
@@ -180,6 +198,10 @@ class MicroCluster():
         
         cf1 = np.array(self.computeCF1(timestamp))
         cf2 = np.array(self.computeCF2(timestamp))
+
+#        cf1 = np.array(self.LS)
+#        cf2 = np.array(self.SS)
+
         w = self.computeWeight(timestamp)
         
         maxRad = 0
@@ -194,12 +216,14 @@ class MicroCluster():
             except:
                 pass
                     
-#        self.radius = maxRad * radiusFactor
+        self.radius = maxRad * radiusFactor
         return maxRad * radiusFactor
 
     def getRadius(self):
         
         return self.radius
+    
+#    def updateWeigth()
     
 #    ### V1 without real weight ###
 #    def getCF1(self, dt):
